@@ -1,0 +1,36 @@
+[project]
+name = "oee"
+version = "0.1.0"
+description = "OEE monolith data engineering pipeline for daily Power BI refresh"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+	"duckdb>=1.0.0",
+	"pandas>=2.2.0",
+	"sqlalchemy>=2.0.0",
+	"pyodbc>=5.1.0",
+	"openpyxl>=3.1.0",
+	"xlrd>=2.0.1",
+	"dbt-core>=1.8.0",
+	"dbt-duckdb>=1.8.0",
+]
+
+[project.scripts]
+oee-ingest = "oee_ingestion.main:main"
+
+[tool.setuptools.packages.find]
+where = ["oee-ingestion/src"]
+
+[tool.uv.workspace]
+members = [
+    "oee-ingestion",
+]
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+orchestration = [
+	"apache-airflow>=2.9.0",
+]

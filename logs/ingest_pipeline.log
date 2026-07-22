@@ -1,0 +1,10 @@
+2026-07-22 14:30:17,909 [INFO] [1/1] Reading: complete_beam.XLS
+2026-07-22 14:30:18,517 [INFO] Finished ingesting 21,264 rows into complete_beam
+2026-07-22 14:30:18,521 [INFO] [1/1] Reading: start_beam.xlsx
+2026-07-22 14:30:18,914 [INFO] Finished ingesting 376 rows into start_beam
+2026-07-22 15:07:26,341 [INFO] [1/1] Reading: complete_beam.XLS
+2026-07-22 15:07:26,974 [INFO] Finished ingesting 21,264 rows into complete_beam
+2026-07-22 15:07:26,978 [INFO] [1/1] Reading: start_beam.xlsx
+2026-07-22 15:07:27,367 [INFO] Finished ingesting 376 rows into start_beam
+2026-07-22 15:07:27,368 [INFO] [1/1] Reading: textile_days.xlsx
+2026-07-22 15:07:28,882 [INFO] Finished ingesting 44,296 rows into textile_days

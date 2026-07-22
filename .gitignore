@@ -1,0 +1,10 @@
+# Dữ liệu và database
+*.db
+data/~$*
+data/*.XLS
+data/*.xlsx
+
+# Log file
+logs/
+*.log
+*.egg-info/
