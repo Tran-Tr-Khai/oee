@@ -3,6 +3,7 @@ import duckdb
 from oee_ingestion.config import (
     DATA_DIR,
     DUCKDB_PATH,
+    LoadStrategy,
     PipelineConfig,
 )
 from oee_ingestion.extractors.beam import (
@@ -20,16 +21,21 @@ BEAM_PIPELINES = [
         table_name="raw_complete_beam",
         file_pattern="*complete_beam*",
         extractor_func=extract_complete_beam,
+        load_strategy=LoadStrategy.UPSERT,
+        merge_keys=("date", "machine", "lot"),
     ),
     PipelineConfig(
         table_name="raw_start_beam",
         file_pattern="*start_beam*",
         extractor_func=extract_start_beam,
+        load_strategy=LoadStrategy.REPLACE,
     ),
     PipelineConfig(
         table_name="raw_textile_days",
         file_pattern="*textile_days*",
         extractor_func=extract_textile_days,
+        load_strategy=LoadStrategy.UPSERT,
+        merge_keys=("machine_no", "prod_date"),
     ),
 ]
 
