@@ -8,3 +8,4 @@ data/*.xlsx
 logs/
 *.log
 *.egg-info/
+.env

@@ -8,6 +8,7 @@ import duckdb
 import pandas as pd
 
 from oee_ingestion.config import (
+    IncrementalType,
     LOG_DIR,
     LoadStrategy,
     PipelineConfig,
@@ -70,15 +71,6 @@ def table_exists(
     return result is not None
 
 
-def get_table_row_count(
-    conn: duckdb.DuckDBPyConnection,
-    table_name: str,
-) -> int:
-    return conn.execute(
-        f"SELECT COUNT(*) FROM {quote_identifier(table_name)}"
-    ).fetchone()[0]
-
-
 def get_table_columns(
     conn: duckdb.DuckDBPyConnection,
     table_name: str,
@@ -134,42 +126,85 @@ def build_select_sql(columns: list[str]) -> str:
     )
 
 
-def get_merge_keys(
-    config: PipelineConfig,
-    target_columns: list[str],
-) -> list[str]:
-    if config.merge_keys:
-        return list(config.merge_keys)
-
-    return [
-        column
-        for column in target_columns
-        if not column.startswith("_")
-    ]
-
-
-def build_merge_condition(merge_keys: list[str]) -> str:
-    return " AND ".join(
-        f"target.{quote_identifier(key)} "
-        f"IS NOT DISTINCT FROM source.{quote_identifier(key)}"
-        for key in merge_keys
+def resolve_column_name(
+    columns: list[str],
+    column_name: str,
+) -> str:
+    columns_by_key = {
+        canonical_identifier(column): column
+        for column in columns
+    }
+    resolved_column = columns_by_key.get(
+        canonical_identifier(column_name)
     )
+    if resolved_column:
+        return resolved_column
+
+    raise ValueError(f"Missing column: {column_name}")
 
 
-def deduplicate_upsert_frame(
+def sort_source_frame(
     df: pd.DataFrame,
-    merge_keys: list[str],
+    sort_columns: list[str],
 ) -> pd.DataFrame:
-    if not merge_keys:
+    sort_columns = [
+        column
+        for column in sort_columns
+        if column in df.columns
+    ]
+    if not sort_columns:
         return df.reset_index(drop=True)
 
-    return (
-        df.drop_duplicates(
-            subset=merge_keys,
-            keep="last",
+    return df.sort_values(
+        by=sort_columns,
+        kind="stable",
+    ).reset_index(drop=True)
+
+
+def get_incremental_select_sql(
+    incremental_column: str,
+    incremental_type: IncrementalType,
+) -> str:
+    quoted_column = quote_identifier(incremental_column)
+    if incremental_type == IncrementalType.BIGINT:
+        return f"SELECT MAX(TRY_CAST({quoted_column} AS BIGINT)) FROM"
+
+    return f"SELECT MAX(TRY_CAST({quoted_column} AS TIMESTAMP)) FROM"
+
+
+def get_latest_incremental_value(
+    conn: duckdb.DuckDBPyConnection,
+    table_name: str,
+    incremental_column: str,
+    incremental_type: IncrementalType,
+):
+    return conn.execute(
+        f"{get_incremental_select_sql(incremental_column, incremental_type)} "
+        f"{quote_identifier(table_name)}"
+    ).fetchone()[0]
+
+
+def filter_incremental_rows(
+    df: pd.DataFrame,
+    incremental_column: str,
+    incremental_type: IncrementalType,
+    latest_value,
+) -> pd.DataFrame:
+    if latest_value is None:
+        return df.reset_index(drop=True)
+
+    if incremental_type == IncrementalType.BIGINT:
+        values = pd.to_numeric(
+            df[incremental_column],
+            errors="coerce",
         )
-        .reset_index(drop=True)
-    )
+    else:
+        values = pd.to_datetime(
+            df[incremental_column],
+            errors="coerce",
+        )
+
+    return df.loc[values > latest_value].reset_index(drop=True)
 
 
 def replace_table(
@@ -208,19 +243,29 @@ def replace_table(
     return total_rows
 
 
-def upsert_table(
+def append_table(
     conn: duckdb.DuckDBPyConnection,
     table_name: str,
     frames: list[pd.DataFrame],
     target_columns: list[str],
-    merge_keys: list[str],
+    incremental_column: str,
+    incremental_type: IncrementalType,
+    sort_columns: list[str],
 ) -> int:
-    source_df = deduplicate_upsert_frame(
-        df=pd.concat(frames, ignore_index=True),
-        merge_keys=merge_keys,
-    )
-    source_columns = list(source_df.columns)
+    source_df = pd.concat(frames, ignore_index=True)
     quoted_table = quote_identifier(table_name)
+    source_sort_columns = [
+        resolve_column_name(list(source_df.columns), column)
+        for column in (
+            list(sort_columns)
+            if sort_columns
+            else [incremental_column]
+        )
+    ]
+    source_df = sort_source_frame(
+        source_df,
+        source_sort_columns,
+    )
 
     if not table_exists(conn, table_name):
         aligned_df = source_df.reindex(columns=target_columns).astype("string")
@@ -239,56 +284,110 @@ def upsert_table(
         incoming_columns=target_columns,
     )
     source_df = source_df.rename(columns=resolved_columns)
-    source_columns = list(source_df.columns)
-
-    merge_columns = [
-        key
-        for key in (
-            resolved_columns.get(key, key)
-            for key in merge_keys
+    target_incremental_column = resolve_column_name(
+        target_columns,
+        resolved_columns.get(incremental_column, incremental_column),
+    )
+    target_sort_columns = [
+        resolve_column_name(
+            target_columns,
+            resolved_columns.get(column, column),
         )
-        if key in target_columns and key in source_columns
+        for column in (
+            list(sort_columns)
+            if sort_columns
+            else [incremental_column]
+        )
     ]
-    if not merge_columns:
-        raise ValueError(
-            f"No valid merge keys configured for {table_name}"
-        )
+    latest_value = get_latest_incremental_value(
+        conn=conn,
+        table_name=table_name,
+        incremental_column=target_incremental_column,
+        incremental_type=incremental_type,
+    )
+    source_df = sort_source_frame(
+        source_df,
+        target_sort_columns,
+    )
+    source_df = filter_incremental_rows(
+        df=source_df,
+        incremental_column=target_incremental_column,
+        incremental_type=incremental_type,
+        latest_value=latest_value,
+    )
+    if source_df.empty:
+        return 0
 
     aligned_df = source_df.reindex(columns=target_columns).astype("string")
-    update_columns = [
-        column
-        for column in source_columns
-        if column not in merge_columns
-    ]
-    merge_condition = build_merge_condition(merge_columns)
-    update_assignments = ", ".join(
-        f"{quote_identifier(column)} = source.{quote_identifier(column)}"
-        for column in update_columns
-    )
     insert_columns = ", ".join(
         quote_identifier(column)
         for column in target_columns
     )
-    insert_values = ", ".join(
-        f"source.{quote_identifier(column)}"
-        for column in target_columns
-    )
 
     with registered_frame(conn, aligned_df) as relation_name:
-        merge_sql = (
-            f"MERGE INTO {quoted_table} AS target "
-            f"USING {quote_identifier(relation_name)} AS source "
-            f"ON {merge_condition} "
+        conn.execute(
+            f"INSERT INTO {quoted_table} ({insert_columns}) "
+            f"SELECT {insert_columns} "
+            f"FROM {quote_identifier(relation_name)} AS source "
         )
-        if update_assignments:
-            merge_sql += f"WHEN MATCHED THEN UPDATE SET {update_assignments} "
-        merge_sql += (
-            f"WHEN NOT MATCHED THEN INSERT ({insert_columns}) "
-            f"VALUES ({insert_values})"
-        )
-        conn.execute(merge_sql)
 
     return len(aligned_df)
+
+
+def run_dataframe_pipeline(
+    conn: duckdb.DuckDBPyConnection,
+    frames: list[pd.DataFrame],
+    config: PipelineConfig,
+) -> None:
+    if not frames:
+        logging.warning("No valid data found to ingest for %s", config.table_name)
+        return
+
+    target_columns: list[str] = []
+    seen_columns: set[str] = set()
+    for df in frames:
+        for column in df.columns:
+            if column in seen_columns:
+                continue
+            seen_columns.add(column)
+            target_columns.append(column)
+
+    try:
+        if config.load_strategy == LoadStrategy.APPEND:
+            if not config.incremental_column:
+                raise ValueError(
+                    f"Missing incremental_column for append pipeline: "
+                    f"{config.table_name}"
+                )
+            total_rows = append_table(
+                conn=conn,
+                table_name=config.table_name,
+                frames=frames,
+                target_columns=target_columns,
+                incremental_column=config.incremental_column,
+                incremental_type=config.incremental_type,
+                sort_columns=list(config.sort_columns),
+            )
+        else:
+            total_rows = replace_table(
+                conn=conn,
+                table_name=config.table_name,
+                frames=frames,
+                target_columns=target_columns,
+            )
+    except Exception:
+        if config.load_strategy == LoadStrategy.REPLACE:
+            conn.execute(
+                f"DROP TABLE IF EXISTS {quote_identifier(config.table_name)}"
+            )
+        raise
+
+    logging.info(
+        "Processed %s source rows into %s using %s mode",
+        f"{total_rows:,}",
+        config.table_name,
+        config.load_strategy,
+    )
 
 
 def run_ingest_pipeline(
@@ -296,6 +395,11 @@ def run_ingest_pipeline(
     data_dir: Path,
     config: PipelineConfig,
 ) -> None:
+    if config.extractor_func is None:
+        raise ValueError(
+            f"Missing extractor_func for Excel pipeline: {config.table_name}"
+        )
+
     excel_files = sorted(
         [
             path
@@ -312,7 +416,6 @@ def run_ingest_pipeline(
         return
 
     frames: list[pd.DataFrame] = []
-    union_schema: dict[str, None] = {}
 
     for file_idx, excel_file in enumerate(excel_files, start=1):
         if len(excel_files) == 1:
@@ -346,46 +449,15 @@ def run_ingest_pipeline(
                     if df.empty:
                         continue
 
-                    df = add_metadata(df, excel_file, sheet_name)
-                    for col in df.columns:
-                        union_schema.setdefault(col, None)
-                    frames.append(df)
+                    frames.append(
+                        add_metadata(df, excel_file, sheet_name)
+                    )
         except Exception:
             logging.exception("Failed reading workbook: %s", excel_file)
             raise
 
-    if not frames:
-        logging.warning("No valid data found to ingest for %s", config.table_name)
-        return
-
-    target_columns = list(union_schema)
-    merge_keys = get_merge_keys(config, target_columns)
-    try:
-        if config.load_strategy == LoadStrategy.UPSERT:
-            total_rows = upsert_table(
-                conn=conn,
-                table_name=config.table_name,
-                frames=frames,
-                target_columns=target_columns,
-                merge_keys=merge_keys,
-            )
-        else:
-            total_rows = replace_table(
-                conn=conn,
-                table_name=config.table_name,
-                frames=frames,
-                target_columns=target_columns,
-            )
-    except Exception:
-        if config.load_strategy == LoadStrategy.REPLACE:
-            conn.execute(
-                f"DROP TABLE IF EXISTS {quote_identifier(config.table_name)}"
-            )
-        raise
-
-    logging.info(
-        "Processed %s source rows into %s using %s mode",
-        f"{total_rows:,}",
-        config.table_name,
-        config.load_strategy,
+    run_dataframe_pipeline(
+        conn=conn,
+        frames=frames,
+        config=config,
     )
