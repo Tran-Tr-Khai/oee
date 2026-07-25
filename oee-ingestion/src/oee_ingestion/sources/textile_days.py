@@ -12,6 +12,7 @@ from oee_ingestion.normalization import (
 
 KOREAN_DATE_REGEX = re.compile(r"(\d{1,2})월(\d{1,2})일")
 
+TEXTILE_MACHINE_NO_REGEX = re.compile(r"^(?:\d+|M-\d+)$", re.IGNORECASE)
 TEXTILE_CURRENT_MONTH_START_COL_IDX = 5
 TEXTILE_DATA_START_ROW_IDX = 4
 TEXTILE_MACHINE_COL_IDX = 0
@@ -49,6 +50,24 @@ def normalize_textile_merge_keys(
     return df.dropna(
         subset=["machine_no", "prod_date"],
     )
+
+
+def filter_valid_textile_machine_rows(
+    df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Keep only rows whose first column looks like a real machine id."""
+    machine_values = normalize_machine_no(
+        df.iloc[:, TEXTILE_MACHINE_COL_IDX]
+    )
+    valid_mask = (
+        machine_values.notna()
+        & machine_values.str.fullmatch(TEXTILE_MACHINE_NO_REGEX)
+    )
+    filtered_df = df.loc[valid_mask].copy()
+    filtered_df.iloc[:, TEXTILE_MACHINE_COL_IDX] = machine_values.loc[
+        valid_mask
+    ].to_numpy()
+    return filtered_df
 
 
 def should_skip_sheet(sheet_name: str) -> bool:
@@ -122,9 +141,7 @@ def extract_lot_table(
         *lot_dates,
     ]
 
-    df_lot = df_lot.dropna(
-        subset=["machine_no"],
-    )
+    df_lot = filter_valid_textile_machine_rows(df_lot)
 
     df_lot = df_lot.melt(
         id_vars=["machine_no"],
@@ -221,14 +238,9 @@ def extract_production_table(
     production_headers = df.iloc[2].values
     source_rows = df.iloc[TEXTILE_DATA_START_ROW_IDX:]
 
-    valid_machine_mask = source_rows.iloc[
-        :,
-        TEXTILE_MACHINE_COL_IDX,
-    ].notna()
-
-    valid_rows = source_rows.loc[
-        valid_machine_mask
-    ]
+    valid_rows = filter_valid_textile_machine_rows(
+        source_rows
+    )
 
     if valid_rows.empty:
         logging.warning(
@@ -237,9 +249,10 @@ def extract_production_table(
         )
         return pd.DataFrame()
 
-    machines = normalize_machine_no(
-        valid_rows.iloc[:, TEXTILE_MACHINE_COL_IDX]
-    ).to_numpy()
+    machines = valid_rows.iloc[
+        :,
+        TEXTILE_MACHINE_COL_IDX,
+    ].to_numpy()
 
     production_chunks: list[pd.DataFrame] = []
 

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 from urllib.parse import quote_plus
 
 import pandas as pd
@@ -32,6 +33,7 @@ def read_sql_server_table(
 
 def read_machine_status(
     config: MssqlConfig,
+    min_id: int | None = None,
 ) -> pd.DataFrame:
     query = """
         SELECT
@@ -40,7 +42,17 @@ def read_machine_status(
             [status],
             [timestamp]
         FROM [ESP32].[dbo].[ws2_working_status]
+        WHERE [timestamp] >= '2026-07-01' AND [timestamp] < '2026-08-01'
     """
+    if min_id is not None:
+        query += f"\n        AND [id] > {int(min_id)}"
+
+    query += "\n        ORDER BY [id]"
+
+    logging.info(
+        "Reading raw_machine_status from SQL Server with min_id=%s",
+        min_id,
+    )
     df = read_sql_server_table(
         query=query,
         connection_string=build_odbc_connection_string(config),

@@ -2,9 +2,10 @@ from typing import Any
 import re
 import pandas as pd
 
-CLEAN_CHARS_REGEX = re.compile(r"[()]+")
+CLEAN_CHARS_REGEX = re.compile(r"[()#]+")
 SPLIT_CHARS_REGEX = re.compile(r"[\s/\\\-.]+")
 MULTIPLE_UNDERSCORES_REGEX = re.compile(r"_+")
+EXCEL_COLUMN_LETTER_REGEX = re.compile(r"^[A-Z]$")
 
 def normalize_column_name(column: Any) -> str:
     if isinstance(column, tuple):
@@ -13,6 +14,8 @@ def normalize_column_name(column: Any) -> str:
             for raw in column
             if pd.notna(raw) and str(raw).strip() and not str(raw).startswith("Unnamed")    
         ]
+        if len(parts) > 1 and EXCEL_COLUMN_LETTER_REGEX.fullmatch(parts[-1]):
+            parts = parts[:-1]
         name = "_".join(parts)
     else: 
         name = str(column).strip()
@@ -20,7 +23,7 @@ def normalize_column_name(column: Any) -> str:
     name = CLEAN_CHARS_REGEX.sub("", name)
     name = SPLIT_CHARS_REGEX.sub("_", name)
     name = MULTIPLE_UNDERSCORES_REGEX.sub("_", name)
-    return name.strip("_")
+    return name.strip("_").casefold()
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame: 
     columns = []

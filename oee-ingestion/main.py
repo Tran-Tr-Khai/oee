@@ -19,8 +19,10 @@ from oee_ingestion.sources.textile_days import (
     extract_textile_days
 )
 from oee_ingestion.pipeline import (
+    get_latest_incremental_value,
     run_dataframe_pipeline,
     run_ingest_pipeline,
+    table_exists,
 )
 
 
@@ -32,7 +34,7 @@ EXCEL_PIPELINES = [
         load_strategy=LoadStrategy.APPEND,
         incremental_column="date",
         incremental_type=IncrementalType.TIMESTAMP,
-        sort_columns=("date", "machine", "lot"),
+        sort_columns=("date", "machine", "lot", "shift", "worker"),
     ),
     PipelineConfig(
         table_name="raw_start_beam",
@@ -72,7 +74,19 @@ def main() -> None:
                 config=config,
             )
 
-        machine_status_df = read_machine_status(mssql_config)
+        latest_machine_status_id = None
+        if table_exists(conn, MACHINE_STATUS_PIPELINE.table_name):
+            latest_machine_status_id = get_latest_incremental_value(
+                conn=conn,
+                table_name=MACHINE_STATUS_PIPELINE.table_name,
+                incremental_column=MACHINE_STATUS_PIPELINE.incremental_column,
+                incremental_type=MACHINE_STATUS_PIPELINE.incremental_type,
+            )
+
+        machine_status_df = read_machine_status(
+            mssql_config,
+            min_id=latest_machine_status_id,
+        )
         run_dataframe_pipeline(
             conn=conn,
             frames=[machine_status_df],
