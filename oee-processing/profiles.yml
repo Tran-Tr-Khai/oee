@@ -1,0 +1,8 @@
+oee_processing:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "../db/oee.db"
+      schema: main
+      threads: 4

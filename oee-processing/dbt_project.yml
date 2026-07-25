@@ -1,0 +1,19 @@
+name: oee_processing
+version: "0.1.0"
+config-version: 2
+
+profile: oee_processing
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  oee_processing:
+    silver:
+      +materialized: table

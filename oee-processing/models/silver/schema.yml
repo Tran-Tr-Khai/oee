@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: slv_machine_status
+    columns:
+      - name: id
+        tests:
+          - not_null
+          - unique
+      - name: machine
+        tests:
+          - not_null
+      - name: timestamp
+        tests:
+          - not_null
+      - name: date
+        tests:
+          - not_null
+
+  - name: slv_complete_beam
+    columns:
+      - name: date
+        tests:
+          - not_null
+      - name: machine
+        tests:
+          - not_null
+      - name: lot
+        tests:
+          - not_null
+
+  - name: slv_textile_days
+    columns:
+      - name: date
+        tests:
+          - not_null
+      - name: machine
+        tests:
+          - not_null
+      - name: lot
+        tests:
+          - not_null
+
+  - name: slv_start_beam
+    columns:
+      - name: date
+        tests:
+          - not_null
+      - name: machine
+        tests:
+          - not_null
+      - name: lot
+        tests:
+          - not_null
+      - name: beam_start_date
+        tests:
+          - not_null

@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: main
+    tables:
+      - name: raw_machine_status
+      - name: raw_complete_beam
+      - name: raw_textile_days
+      - name: raw_start_beam
