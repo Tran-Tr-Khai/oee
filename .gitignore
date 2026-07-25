@@ -1,5 +1,5 @@
 # Dữ liệu và database
-*.db
+
 data/~$*
 data/*.XLS
 data/*.xlsx
