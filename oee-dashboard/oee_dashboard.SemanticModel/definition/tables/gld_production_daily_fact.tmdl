@@ -1,0 +1,335 @@
+table gld_production_daily_fact
+	lineageTag: 02777335-79c3-4837-9ea3-1fe920fbea4b
+
+	measure 'Total Production Mts' = SUM ( 'gld_production_daily_fact'[production_qty_mts] )
+		formatString: #,0.0
+		lineageTag: 641f2fed-b9cd-4baa-af10-dc7d239432d4
+
+	measure 'Production 7D Average' =
+			VAR axisDate = MAX ( 'gld_date_dim'[date] )
+			VAR reportDate =
+			    CALCULATE (
+			        [Reporting Date],
+			        ALLSELECTED ( 'gld_date_dim'[date] )
+			    )
+			RETURN
+			    IF (
+			        ISBLANK ( axisDate )
+			            || ISBLANK ( reportDate )
+			            || axisDate > reportDate,
+			        BLANK (),
+			        AVERAGEX (
+			            DATESINPERIOD (
+			                'gld_date_dim'[date],
+			                axisDate,
+			                -7,
+			                DAY
+			            ),
+			            [Total Production Mts]
+			        )
+			    )
+		formatString: #,0.0
+		lineageTag: 896f5071-ca73-49c5-9613-82471eb3c941
+
+	measure 'Production with Plan Mts' = CALCULATE ( [Total Production Mts], 'gld_production_daily_fact'[beam_plan_key] <> BLANK () )
+		formatString: #,0.0
+		lineageTag: 9493269c-5cd4-4ec4-8c55-91ce1815ccf4
+
+	measure 'Planned Daily Output Mts' = SUMX ( 'gld_production_daily_fact', RELATED ( 'gld_beam_plan_dim'[planned_daily_output_mts] ) )
+		formatString: #,0.0
+		lineageTag: b19d8d26-edbd-4d95-a493-921c912217c0
+
+	measure 'Performance %' = DIVIDE ( [Production with Plan Mts], [Planned Daily Output Mts] )
+		formatString: 0.0%
+		lineageTag: 3cd9bf54-ef95-4e3e-9597-4862dd6af145
+
+	measure 'Plan Gap Mts' = [Planned Daily Output Mts] - [Production with Plan Mts]
+		formatString: #,0.0
+		lineageTag: 5c66d6f4-dc77-4c35-aea1-4149f5da59c6
+
+	measure 'Plan Coverage %' = DIVIDE ( [Production with Plan Mts], [Total Production Mts] )
+		formatString: 0.0%
+		lineageTag: b77c5822-7d53-4281-a7f5-869c6f1d629a
+
+	measure 'Reporting Date' =
+			VAR productionDate =
+			    CALCULATE (
+			        MAX ( 'gld_production_daily_fact'[date] ),
+			        REMOVEFILTERS ( 'gld_machine_dim' ),
+			        'gld_production_daily_fact'[beam_plan_key] <> BLANK ()
+			    )
+			VAR statusDate =
+			    CALCULATE (
+			        MAX ( 'gld_machine_status_daily_fact'[date] ),
+			        REMOVEFILTERS ( 'gld_machine_dim' )
+			    )
+			RETURN
+			    IF (
+			        ISBLANK ( productionDate ) || ISBLANK ( statusDate ),
+			        BLANK (),
+			        MIN ( productionDate, statusDate )
+			    )
+		formatString: dd mmm yyyy
+		lineageTag: e91c90a4-2f22-4dae-b425-c7648b917184
+
+	measure 'Reporting Date Label' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        "NO COMMON DATA IN SELECTED RANGE",
+			        "REPORTING DATE  |  " & UPPER ( FORMAT ( reportDate, "dd MMM yyyy" ) )
+			    )
+		lineageTag: 40245356-0f85-4a66-ae38-6f1345ae2c1d
+
+	measure 'Production at Reporting Date Mts' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            [Total Production Mts],
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            'gld_date_dim'[date] = reportDate
+			        )
+			    )
+		formatString: #,0
+		lineageTag: f1651b74-48b6-4905-a245-ed16f74f6056
+
+	measure 'Previous 7D Production Average Mts' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            AVERAGEX ( VALUES ( 'gld_date_dim'[date] ), [Total Production Mts] ),
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            DATESBETWEEN (
+			                'gld_date_dim'[date],
+			                reportDate - 7,
+			                reportDate - 1
+			            )
+			        )
+			    )
+		formatString: #,0
+		lineageTag: e57f1d98-99b9-4c15-9bcf-c6025e90b52a
+
+	measure 'Production vs Previous 7D %' =
+			DIVIDE (
+			    [Production at Reporting Date Mts] - [Previous 7D Production Average Mts],
+			    [Previous 7D Production Average Mts]
+			)
+		formatString: +0.0%;-0.0%;0.0%
+		lineageTag: 4eab520e-3916-47b8-875e-bd8de9cac511
+
+	measure 'Plan Attainment at Reporting Date %' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            [Performance %],
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            'gld_date_dim'[date] = reportDate
+			        )
+			    )
+		formatString: 0.0%
+		lineageTag: 08b40f86-c650-4241-9123-cf2935209009
+
+	measure 'Plan vs Previous 7D %' = [Plan Attainment at Reporting Date %] - [Previous 7D Plan Attainment %]
+		formatString: +0.0%;-0.0%;0.0%
+		lineageTag: 1dbc5278-256c-44fd-85a9-2001b1df69e7
+
+	measure 'Plan Gap at Reporting Date Mts' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            [Plan Gap Mts],
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            'gld_date_dim'[date] = reportDate
+			        )
+			    )
+		formatString: #,0
+		lineageTag: 276afcd7-6207-420d-9e72-1775814734c8
+
+	measure 'Plan Coverage at Reporting Date %' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            [Plan Coverage %],
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            'gld_date_dim'[date] = reportDate
+			        )
+			    )
+		formatString: 0.0%
+		lineageTag: e8c16d4f-382a-4bf5-bb95-a99ad91be5f1
+
+	measure 'Factory Health at Reporting Date %' =
+			VAR availabilityScore = MIN ( MAX ( [Availability at Reporting Date %], 0 ), 1 )
+			VAR planScore = MIN ( MAX ( [Plan Attainment at Reporting Date %], 0), 1 )
+			RETURN
+			    IF (
+			        ISBLANK ( [Availability at Reporting Date %] )
+			            || ISBLANK ( [Plan Attainment at Reporting Date %] ),
+			        BLANK (),
+			        availabilityScore * 0.6
+			            + planScore * 0.4
+			    )
+		formatString: 0.0%
+		lineageTag: b1fb4faf-ed4d-470d-906d-d8e4d4b8fd54
+
+	measure 'Factory Health Status' =
+			VAR healthScore = [Factory Health at Reporting Date %]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( healthScore ), "DATA GAP",
+			        healthScore >= 0.95, "STRONG",
+			        healthScore >= 0.85, "STABLE",
+			        healthScore >= 0.75, "WATCH",
+			        "CRITICAL"
+			    )
+		lineageTag: 3a4927bb-f1c1-4363-b245-97940391cd45
+
+	measure 'Factory Health Insight' =
+			VAR reportDate =
+			    [Reporting Date]
+			VAR criticalMachines =
+			    [Critical Machine Count at Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        "Insufficient overlapping production, status, and matched plan data.",
+			        FORMAT ( criticalMachines, "#,0" )
+			            & " machines below 75% availability."
+			    )
+		lineageTag: 16f80c78-ebaf-4771-9b3a-f1515802ddb4
+
+	measure 'Production Through Reporting Date Mts' =
+			VAR axisDate = MAX ( 'gld_date_dim'[date] )
+			VAR reportDate =
+			    CALCULATE (
+			        [Reporting Date],
+			        ALLSELECTED ( 'gld_date_dim'[date] )
+			    )
+			RETURN
+			    IF (
+			        ISBLANK ( axisDate )
+			            || ISBLANK ( reportDate )
+			            || axisDate > reportDate,
+			        BLANK (),
+			        [Total Production Mts]
+			    )
+		formatString: #,0.0
+		lineageTag: 0a5d76e5-03e0-437a-bf45-e20077e84068
+
+	measure 'Production Change Color' =
+			VAR changeValue = [Production vs Previous 7D %]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( changeValue ), "#667085",
+			        changeValue > 0, "#2FA66A",
+			        changeValue < 0, "#E63946",
+			        "#667085"
+			    )
+		lineageTag: 69e54482-7716-4640-a939-966121ef7d53
+
+	measure 'Previous 7D Plan Attainment %' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            [Performance %],
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            DATESBETWEEN (
+			                'gld_date_dim'[date],
+			                reportDate - 7,
+			                reportDate - 1
+			            )
+			        )
+			    )
+		formatString: 0.0%
+		lineageTag: 46e6d4f4-d69d-4abc-816a-eba42d5ddb9d
+
+	measure 'Plan Change Color' =
+			VAR changeValue = [Plan vs Previous 7D %]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( changeValue ), "#667085",
+			        changeValue > 0, "#2FA66A",
+			        changeValue < 0, "#E63946",
+			        "#667085"
+			    )
+		lineageTag: 13cc15d5-3560-48b4-b737-270ee4880cd4
+
+	measure 'Plan Coverage Label at Reporting Date' =
+			VAR coverage = [Plan Coverage at Reporting Date %]
+			RETURN
+			    IF (
+			        ISBLANK ( coverage ),
+			        "NO MATCHED PLAN COVERAGE",
+			        FORMAT ( coverage, "0.0%" ) & " of output covered"
+			    )
+		lineageTag: 015ffa63-0e4c-4a09-828f-81ec498b0b13
+
+	column date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: a124ede0-20ff-4ae7-a7ad-afafd6160b8a
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column machine
+		dataType: string
+		lineageTag: 366f89d8-a097-4d81-acd0-adca2c461492
+		summarizeBy: none
+		sourceColumn: machine
+
+		annotation SummarizationSetBy = Automatic
+
+	column production_qty_mts
+		dataType: double
+		lineageTag: 33e710b2-9005-45a7-9ed8-485c208d7cf7
+		summarizeBy: sum
+		sourceColumn: production_qty_mts
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column beam_plan_key
+		dataType: string
+		lineageTag: c6de32ca-5b6b-4ae8-aeab-50d958279aab
+		summarizeBy: none
+		sourceColumn: beam_plan_key
+
+		annotation SummarizationSetBy = Automatic
+
+	partition gld_production_daily_fact = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents("C:\Users\HIEU\Desktop\oee\data\exports\powerbi\gld_production_daily_fact.parquet"), [Compression=null, LegacyColumnNameEncoding=false, MaxDepth=null])
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table

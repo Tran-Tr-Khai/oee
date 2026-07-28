@@ -1,0 +1,184 @@
+{
+  "name": "OEEIndustrialExecutive-9c7a41d2.json",
+  "dataColors": [
+    "#F6C90E",
+    "#3BB273",
+    "#E63946",
+    "#667085",
+    "#101828",
+    "#98A2B3"
+  ],
+  "good": "#3BB273",
+  "neutral": "#F6C90E",
+  "bad": "#E63946",
+  "maximum": "#3BB273",
+  "center": "#F6C90E",
+  "minimum": "#E63946",
+  "firstLevelElements": "#101828",
+  "secondLevelElements": "#667085",
+  "thirdLevelElements": "#E4E7EC",
+  "fourthLevelElements": "#98A2B3",
+  "background": "#FFFFFF",
+  "secondaryBackground": "#F7F8FA",
+  "tableAccent": "#F6C90E",
+  "textClasses": {
+    "callout": {
+      "fontFace": "Bahnschrift SemiBold",
+      "fontSize": 26,
+      "color": "#101828"
+    },
+    "header": {
+      "fontFace": "Bahnschrift SemiBold",
+      "fontSize": 12,
+      "color": "#101828"
+    },
+    "title": {
+      "fontFace": "Bahnschrift SemiBold",
+      "fontSize": 12,
+      "color": "#101828"
+    },
+    "label": {
+      "fontFace": "Aptos",
+      "fontSize": 10,
+      "color": "#344054"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "background": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#FFFFFF"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#E4E7EC"
+              }
+            },
+            "width": 1,
+            "radius": 12
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": true,
+            "preset": "Bottom",
+            "position": "Outer",
+            "color": {
+              "solid": {
+                "color": "#101828"
+              }
+            },
+            "transparency": 97
+          }
+        ],
+        "title": [
+          {
+            "show": true,
+            "fontColor": {
+              "solid": {
+                "color": "#101828"
+              }
+            },
+            "fontSize": 12,
+            "fontFamily": "Bahnschrift SemiBold",
+            "bold": true
+          }
+        ],
+        "padding": [
+          {
+            "top": 8,
+            "bottom": 8,
+            "left": 10,
+            "right": 10
+          }
+        ],
+        "visualHeader": [
+          {
+            "show": false
+          }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#F7F8FA"
+              }
+            },
+            "transparency": 0
+          }
+        ]
+      }
+    },
+    "cardVisual": {
+      "*": {
+        "title": [
+          {
+            "show": false
+          }
+        ],
+        "value": [
+          {
+            "$id": "default",
+            "bold": true,
+            "fontFamily": "Bahnschrift SemiBold"
+          }
+        ],
+        "label": [
+          {
+            "$id": "default",
+            "show": true,
+            "fontFamily": "Aptos",
+            "fontSize": 11
+          }
+        ]
+      }
+    },
+    "slicer": {
+      "*": {
+        "dropShadow": [
+          {
+            "show": false
+          }
+        ],
+        "header": [
+          {
+            "show": true,
+            "fontColor": {
+              "solid": {
+                "color": "#667085"
+              }
+            },
+            "fontFamily": "Bahnschrift SemiBold",
+            "textSize": 9
+          }
+        ],
+        "items": [
+          {
+            "fontColor": {
+              "solid": {
+                "color": "#101828"
+              }
+            },
+            "fontFamily": "Aptos",
+            "textSize": 10
+          }
+        ]
+      }
+    }
+  }
+}

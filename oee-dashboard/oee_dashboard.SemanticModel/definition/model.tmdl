@@ -1,0 +1,22 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	valueFilterBehavior: independent
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_ProTooling = ["DevMode"]
+
+annotation PBI_QueryOrder = ["gld_beam_plan_dim","gld_date_dim","gld_machine_dim","gld_machine_status_daily_fact","gld_production_daily_fact"]
+
+ref table gld_beam_plan_dim
+ref table gld_date_dim
+ref table gld_machine_dim
+ref table gld_machine_status_daily_fact
+ref table gld_production_daily_fact
+
+ref cultureInfo en-US

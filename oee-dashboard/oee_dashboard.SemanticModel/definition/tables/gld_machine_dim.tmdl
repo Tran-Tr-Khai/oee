@@ -1,0 +1,22 @@
+table gld_machine_dim
+	lineageTag: 19a6699d-6969-441a-9436-677a0a932447
+
+	column machine
+		dataType: string
+		lineageTag: 4fd4a4b2-6ab9-4545-bb1d-a46b284d6386
+		summarizeBy: none
+		sourceColumn: machine
+
+		annotation SummarizationSetBy = Automatic
+
+	partition gld_machine_dim = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents("C:\Users\HIEU\Desktop\oee\data\exports\powerbi\gld_machine_dim.parquet"), [Compression=null, LegacyColumnNameEncoding=false, MaxDepth=null])
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table

@@ -9,3 +9,11 @@ logs/
 *.log
 *.egg-info/
 .env
+
+# Generated database, Power BI data, and local state
+db/oee.db
+data/exports/
+**/.pbi/
+oee-dashboard/*.png
+oee-dashboard/model/
+oee-dashboard/report/

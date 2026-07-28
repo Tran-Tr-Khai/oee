@@ -1,0 +1,74 @@
+-- Core measures used by the Overview semantic model.
+-- Reporting-date, comparison, color, and insight measures live in the TMDL files.
+
+-- Production
+Total Production Mts =
+SUM ( 'gld_production_daily_fact'[production_qty_mts] )
+
+Production 7D Average =
+VAR axisDate = MAX ( 'gld_date_dim'[date] )
+VAR reportDate =
+    CALCULATE (
+        [Reporting Date],
+        ALLSELECTED ( 'gld_date_dim'[date] )
+    )
+RETURN
+IF (
+    ISBLANK ( axisDate )
+        || ISBLANK ( reportDate )
+        || axisDate > reportDate,
+    BLANK (),
+    AVERAGEX (
+        DATESINPERIOD (
+            'gld_date_dim'[date],
+            axisDate,
+            -7,
+            DAY
+        ),
+        [Total Production Mts]
+    )
+)
+
+Production with Plan Mts =
+CALCULATE (
+    [Total Production Mts],
+    'gld_production_daily_fact'[beam_plan_key] <> BLANK ()
+)
+
+-- Status
+Running Hours =
+SUM ( 'gld_machine_status_daily_fact'[running_hours] )
+
+Stopped Hours =
+SUM ( 'gld_machine_status_daily_fact'[stopped_hours] )
+
+Changeover Hours =
+SUM ( 'gld_machine_status_daily_fact'[changeover_hours] )
+
+Disconnected Hours =
+SUM ( 'gld_machine_status_daily_fact'[disconnected_hours] )
+
+Total Status Hours =
+[Running Hours]
+    + [Stopped Hours]
+    + [Changeover Hours]
+    + [Disconnected Hours]
+
+Availability % =
+DIVIDE ( [Running Hours], [Total Status Hours] )
+
+Lost Hours =
+[Stopped Hours] + [Changeover Hours] + [Disconnected Hours]
+
+-- Matched beam-plan measures
+Planned Daily Output Mts =
+SUMX (
+    'gld_production_daily_fact',
+    RELATED ( 'gld_beam_plan_dim'[planned_daily_output_mts] )
+)
+
+Performance % =
+DIVIDE ( [Production with Plan Mts], [Planned Daily Output Mts] )
+
+Plan Coverage % =
+DIVIDE ( [Production with Plan Mts], [Total Production Mts] )

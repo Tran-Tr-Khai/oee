@@ -1,0 +1,19 @@
+relationship AutoDetected_78a47acb-ec81-4225-abf5-6b012b5f1061
+	fromColumn: gld_machine_status_daily_fact.machine
+	toColumn: gld_machine_dim.machine
+
+relationship AutoDetected_1a9439ce-bed8-4c87-b78d-aa713a5dd1df
+	fromColumn: gld_production_daily_fact.beam_plan_key
+	toColumn: gld_beam_plan_dim.beam_plan_key
+
+relationship AutoDetected_b3dbe3e6-e2ec-48c0-b548-203606574383
+	fromColumn: gld_production_daily_fact.machine
+	toColumn: gld_machine_dim.machine
+
+relationship de52881c-9b72-5fcb-c0cb-667a2635dbcd
+	fromColumn: gld_machine_status_daily_fact.date
+	toColumn: gld_date_dim.date
+
+relationship 4c074925-731a-5ffc-0b42-59284c1b1ae2
+	fromColumn: gld_production_daily_fact.date
+	toColumn: gld_date_dim.date

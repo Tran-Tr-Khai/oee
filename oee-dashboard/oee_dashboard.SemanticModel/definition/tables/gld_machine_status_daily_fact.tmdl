@@ -1,0 +1,274 @@
+table gld_machine_status_daily_fact
+	lineageTag: ee151243-26f5-48fc-8401-6134ff4c328d
+
+	measure 'Running Hours' = SUM ( 'gld_machine_status_daily_fact'[running_hours] )
+		formatString: #,0.0
+		lineageTag: 2b271d9c-2aa4-4259-965e-0e11b486d5e9
+
+	measure 'Stopped Hours' = SUM ( 'gld_machine_status_daily_fact'[stopped_hours] )
+		formatString: #,0.0
+		lineageTag: 0f158c15-177a-4998-adbf-20420a709b83
+
+	measure 'Changeover Hours' = SUM ( 'gld_machine_status_daily_fact'[changeover_hours] )
+		formatString: #,0.0
+		lineageTag: 6e150e54-b1e2-4cef-ac38-ab00ad88f832
+
+	measure 'Disconnected Hours' = SUM ( 'gld_machine_status_daily_fact'[disconnected_hours] )
+		formatString: #,0.0
+		lineageTag: be78b974-ba4c-4de3-ba64-e61c5fb4176a
+
+	measure 'Total Status Hours' = [Running Hours] + [Stopped Hours] + [Changeover Hours] + [Disconnected Hours]
+		formatString: #,0.0
+		lineageTag: f6760a17-c138-4103-b4e4-1ac2ef63e94c
+
+	measure 'Availability %' = DIVIDE ( [Running Hours], [Total Status Hours] )
+		formatString: 0.0%
+		lineageTag: 41839cf2-0bf3-4f51-8009-8dc3c292e7cf
+
+	measure 'Lost Hours' = [Stopped Hours] + [Changeover Hours] + [Disconnected Hours]
+		formatString: #,0.0
+		lineageTag: b2bc81d0-6379-4c31-8d89-95cc238ce420
+
+	measure 'Critical Machine Count' = COUNTROWS ( FILTER ( VALUES ( 'gld_machine_dim'[machine] ), [Total Status Hours] > 0 && [Availability %] < 0.75 ) )
+		formatString: #,0
+		lineageTag: 11f6c235-9444-48d0-8dc3-1b9313286886
+
+	measure 'Availability at Reporting Date %' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            [Availability %],
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            'gld_date_dim'[date] = reportDate
+			        )
+			    )
+		formatString: 0.0%
+		lineageTag: 9da11f88-9cb1-45d6-b4a5-a44fb3ebb859
+
+	measure 'Availability vs Previous 7D %' = [Availability at Reporting Date %] - [Previous 7D Availability %]
+		formatString: +0.0%;-0.0%;0.0%
+		lineageTag: 5df39c87-b933-4d3d-9f7d-bc8fe253ca17
+
+	measure 'Lost Hours at Reporting Date' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            [Lost Hours],
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            'gld_date_dim'[date] = reportDate
+			        )
+			    )
+		formatString: #,0.0
+		lineageTag: 49428d8a-e617-4823-a46e-61d352dc1c11
+
+	measure 'Critical Machine Count at Reporting Date' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            [Critical Machine Count],
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            'gld_date_dim'[date] = reportDate
+			        )
+			    )
+		formatString: #,0
+		lineageTag: 00aa079a-32e6-4b64-836f-17eba1785bb7
+
+	measure 'Telemetry Conflict Count at Reporting Date' =
+			VAR reportDate = [Reporting Date]
+			VAR machineSignals =
+			    CALCULATETABLE (
+			        ADDCOLUMNS (
+			            VALUES ( 'gld_machine_dim'[machine] ),
+			            "__production", [Total Production Mts],
+			            "__running", [Running Hours],
+			            "__status", [Total Status Hours]
+			        ),
+			        REMOVEFILTERS ( 'gld_date_dim' ),
+			        'gld_date_dim'[date] = reportDate
+			    )
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        COUNTROWS (
+			            FILTER (
+			                machineSignals,
+			                [__production] > 0 && [__status] > 0 && [__running] = 0
+			            )
+			        )
+			    )
+		formatString: #,0
+		lineageTag: a2b5aac4-e60e-462d-8a55-f777c4ad6ac8
+
+	measure 'Missing Status Machine Count at Reporting Date' =
+			VAR reportDate = [Reporting Date]
+			VAR machineSignals =
+			    CALCULATETABLE (
+			        ADDCOLUMNS (
+			            VALUES ( 'gld_machine_dim'[machine] ),
+			            "__production", [Total Production Mts],
+			            "__status", [Total Status Hours]
+			        ),
+			        REMOVEFILTERS ( 'gld_date_dim' ),
+			        'gld_date_dim'[date] = reportDate
+			    )
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        COUNTROWS (
+			            FILTER (
+			                machineSignals,
+			                [__production] > 0 && ( ISBLANK ( [__status] ) || [__status] = 0 )
+			            )
+			        )
+			    )
+		formatString: #,0
+		lineageTag: f0d5c159-bc0d-4a82-b0dd-03fcd056c929
+
+	measure 'Availability 7D Average %' =
+			VAR axisDate = MAX ( 'gld_date_dim'[date] )
+			VAR latestStatusDate =
+			    CALCULATE (
+			        MAX ( 'gld_machine_status_daily_fact'[date] ),
+			        ALLSELECTED ( 'gld_date_dim'[date] )
+			    )
+			RETURN
+			    IF (
+			        ISBLANK ( axisDate )
+			            || ISBLANK ( latestStatusDate )
+			            || axisDate > latestStatusDate,
+			        BLANK (),
+			        CALCULATE (
+			            [Availability %],
+			            DATESINPERIOD (
+			                'gld_date_dim'[date],
+			                axisDate,
+			                -7,
+			                DAY
+			            )
+			        )
+			    )
+		formatString: 0.0%
+		lineageTag: dd1d3727-2500-4a9e-895a-fc392f4f0153
+
+	measure 'Previous 7D Availability %' =
+			VAR reportDate = [Reporting Date]
+			RETURN
+			    IF (
+			        ISBLANK ( reportDate ),
+			        BLANK (),
+			        CALCULATE (
+			            [Availability %],
+			            REMOVEFILTERS ( 'gld_date_dim' ),
+			            DATESBETWEEN (
+			                'gld_date_dim'[date],
+			                reportDate - 7,
+			                reportDate - 1
+			            )
+			        )
+			    )
+		formatString: 0.0%
+		lineageTag: 5642a431-ce19-4b02-9432-ae70c3d44976
+
+	measure 'Availability Change Color' =
+			VAR changeValue = [Availability vs Previous 7D %]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( changeValue ), "#667085",
+			        changeValue > 0, "#2FA66A",
+			        changeValue < 0, "#E63946",
+			        "#667085"
+			    )
+		lineageTag: edde3cdc-7883-4566-9afb-ae188c14c53c
+
+	column date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 6dab0122-2031-4da4-8975-b4be6b62cd3c
+		summarizeBy: none
+		sourceColumn: date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column machine
+		dataType: string
+		lineageTag: bf716c61-56d5-4632-ad2c-ad064654730e
+		summarizeBy: none
+		sourceColumn: machine
+
+		annotation SummarizationSetBy = Automatic
+
+	column running_hours
+		dataType: double
+		lineageTag: 64a26ee7-5aae-42da-8b4b-3d62dbc3b6f5
+		summarizeBy: sum
+		sourceColumn: running_hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column stopped_hours
+		dataType: double
+		lineageTag: 1c5d8dff-af0b-4b66-9c9d-f580e3be5fd9
+		summarizeBy: sum
+		sourceColumn: stopped_hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column changeover_hours
+		dataType: double
+		lineageTag: 64e4654b-aa68-4b6c-9f3b-0d2e67ce328b
+		summarizeBy: sum
+		sourceColumn: changeover_hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column disconnected_hours
+		dataType: double
+		lineageTag: a26da27f-d774-4b6c-b555-34594c7c58dd
+		summarizeBy: sum
+		sourceColumn: disconnected_hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column planned_shutdown_hours
+		dataType: double
+		lineageTag: fdd6d518-5c82-4c7d-b2ad-b970fd02278a
+		summarizeBy: sum
+		sourceColumn: planned_shutdown_hours
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition gld_machine_status_daily_fact = m
+		mode: import
+		source =
+				let
+				    Source = Parquet.Document(File.Contents("C:\Users\HIEU\Desktop\oee\data\exports\powerbi\gld_machine_status_daily_fact.parquet"), [Compression=null, LegacyColumnNameEncoding=false, MaxDepth=null])
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table

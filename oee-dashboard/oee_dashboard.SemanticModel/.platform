@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "oee_dashboard"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "a9caa689-54c1-486b-835e-f2a35537e67c"
+  }
+}
