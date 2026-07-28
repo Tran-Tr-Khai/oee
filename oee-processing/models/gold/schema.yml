@@ -1,0 +1,72 @@
+version: 2
+
+models:
+  - name: gld_date_dim
+    columns:
+      - name: date
+        tests:
+          - not_null
+          - unique
+      - name: date_key
+        tests:
+          - not_null
+          - unique
+
+  - name: gld_beam_plan_dim
+    columns:
+      - name: beam_plan_key
+        tests:
+          - not_null
+          - unique
+      - name: machine
+        tests:
+          - not_null
+      - name: lot
+        tests:
+          - not_null
+      - name: beam_start_date
+        tests:
+          - not_null
+
+  - name: gld_machine_dim
+    columns:
+      - name: machine
+        tests:
+          - not_null
+          - unique
+
+  - name: gld_machine_status_daily_fact
+    columns:
+      - name: date
+        tests:
+          - not_null
+      - name: machine
+        tests:
+          - not_null
+      - name: running_hours
+        tests:
+          - not_null
+      - name: stopped_hours
+        tests:
+          - not_null
+      - name: changeover_hours
+        tests:
+          - not_null
+      - name: disconnected_hours
+        tests:
+          - not_null
+      - name: planned_shutdown_hours
+        tests:
+          - not_null
+
+  - name: gld_production_daily_fact
+    columns:
+      - name: date
+        tests:
+          - not_null
+      - name: machine
+        tests:
+          - not_null
+      - name: lot
+        tests:
+          - not_null
