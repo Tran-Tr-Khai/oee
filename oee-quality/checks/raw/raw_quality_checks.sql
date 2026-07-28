@@ -57,6 +57,12 @@ HAVING COUNT(*) > 1
 ORDER BY duplicate_count DESC, prod_date DESC
 LIMIT 20;
 
+SELECT *
+FROM raw_textile_days
+WHERE prod_date = '2026-06-30'
+  AND machine_no = '100'
+  AND lot_no = 'SC-1020';
+
 DESCRIBE raw_machine_status;
 
 SELECT COUNT(*) AS total_rows,
