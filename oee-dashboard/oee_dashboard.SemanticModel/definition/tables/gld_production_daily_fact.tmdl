@@ -174,6 +174,7 @@ table gld_production_daily_fact
 		lineageTag: e8c16d4f-382a-4bf5-bb95-a99ad91be5f1
 
 	measure 'Factory Health at Reporting Date %' =
+			
 			VAR availabilityScore = MIN ( MAX ( [Availability at Reporting Date %], 0 ), 1 )
 			VAR planScore = MIN ( MAX ( [Plan Attainment at Reporting Date %], 0), 1 )
 			RETURN
@@ -322,6 +323,43 @@ table gld_production_daily_fact
 
 		annotation SummarizationSetBy = Automatic
 
+	column lot
+		dataType: string
+		lineageTag: 722d6479-4c60-4580-9863-010eae6183f2
+		summarizeBy: none
+		sourceColumn: lot
+
+		annotation SummarizationSetBy = Automatic
+
+	column meter_reading_m
+		dataType: double
+		lineageTag: 65833230-724f-47d3-8167-3339a03d5e30
+		summarizeBy: sum
+		sourceColumn: meter_reading_m
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column cut_length_m
+		dataType: double
+		lineageTag: 6ba99bda-025f-43e0-abbc-1251d6adbc5a
+		summarizeBy: sum
+		sourceColumn: cut_length_m
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column is_start_beam
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 5fb34a62-b9fb-4bb9-8e26-f9618b4ba713
+		summarizeBy: none
+		sourceColumn: is_start_beam
+
+		annotation SummarizationSetBy = Automatic
+
 	partition gld_production_daily_fact = m
 		mode: import
 		source =
@@ -333,3 +371,4 @@ table gld_production_daily_fact
 	annotation PBI_NavigationStepName = Navigation
 
 	annotation PBI_ResultType = Table
+

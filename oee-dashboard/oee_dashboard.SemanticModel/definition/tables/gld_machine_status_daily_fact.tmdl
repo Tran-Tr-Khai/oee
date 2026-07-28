@@ -272,3 +272,4 @@ table gld_machine_status_daily_fact
 	annotation PBI_NavigationStepName = Navigation
 
 	annotation PBI_ResultType = Table
+

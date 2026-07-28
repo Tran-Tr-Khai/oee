@@ -19,6 +19,89 @@ table gld_beam_plan_dim
 
 		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
+	column machine
+		dataType: string
+		lineageTag: c21ca61c-ebde-4aca-bf0f-eaac44620480
+		summarizeBy: none
+		sourceColumn: machine
+
+		annotation SummarizationSetBy = Automatic
+
+	column lot
+		dataType: string
+		lineageTag: 8b9f5e03-e952-4821-98dc-c28af950d56c
+		summarizeBy: none
+		sourceColumn: lot
+
+		annotation SummarizationSetBy = Automatic
+
+	column beam_no
+		dataType: string
+		lineageTag: b056e815-4330-495c-9474-b42b55cf4d4a
+		summarizeBy: none
+		sourceColumn: beam_no
+
+		annotation SummarizationSetBy = Automatic
+
+	column beam_start_date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 43850cc1-aaf0-4eff-9dbd-24f4386de9e5
+		summarizeBy: none
+		sourceColumn: beam_start_date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column total_yarn
+		dataType: double
+		lineageTag: 2e858e15-98cc-421f-8326-ff15921d76f5
+		summarizeBy: sum
+		sourceColumn: total_yarn
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column length_m
+		dataType: double
+		lineageTag: 380b5cc2-ad16-4409-8ba6-61d2e3be581f
+		summarizeBy: sum
+		sourceColumn: length_m
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column planned_output
+		dataType: double
+		lineageTag: 911d66e9-a79b-4350-9ceb-37b2e6b09e0e
+		summarizeBy: sum
+		sourceColumn: planned_output
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column expected_beam_end_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 54db9fe9-6e8d-4588-b7fd-150a9c08bbe6
+		summarizeBy: none
+		sourceColumn: expected_beam_end_at
+
+		annotation SummarizationSetBy = Automatic
+
+	column source_updated_at
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 336d8144-75f4-4b99-8280-a15c651166c0
+		summarizeBy: none
+		sourceColumn: source_updated_at
+
+		annotation SummarizationSetBy = Automatic
+
 	partition gld_beam_plan_dim = m
 		mode: import
 		source =
@@ -30,3 +113,4 @@ table gld_beam_plan_dim
 	annotation PBI_NavigationStepName = Navigation
 
 	annotation PBI_ResultType = Table
+

@@ -17,3 +17,15 @@ relationship de52881c-9b72-5fcb-c0cb-667a2635dbcd
 relationship 4c074925-731a-5ffc-0b42-59284c1b1ae2
 	fromColumn: gld_production_daily_fact.date
 	toColumn: gld_date_dim.date
+
+relationship AutoDetected_6c295d8b-5a75-4c44-995c-c5a8efee7e0a
+	isActive: false
+	crossFilteringBehavior: bothDirections
+	fromCardinality: one
+	fromColumn: gld_machine_dim.machine
+	toColumn: gld_beam_plan_dim.machine
+
+relationship AutoDetected_594a5372-3be9-4996-b580-dea5d466fc83
+	fromColumn: gld_machine_status_daily_fact.machine
+	toColumn: gld_beam_plan_dim.machine
+

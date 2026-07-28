@@ -9,6 +9,33 @@ table gld_machine_dim
 
 		annotation SummarizationSetBy = Automatic
 
+	column is_in_production_fact
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 85feae78-2fea-486c-872e-d7b00d88f1e6
+		summarizeBy: none
+		sourceColumn: is_in_production_fact
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_in_status_fact
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: d3aa6919-d540-4fb7-896d-fb690c5b15ca
+		summarizeBy: none
+		sourceColumn: is_in_status_fact
+
+		annotation SummarizationSetBy = Automatic
+
+	column is_in_beam_plan_dim
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 6f2111e6-09f4-43ca-bb8a-8d5eae5111c9
+		summarizeBy: none
+		sourceColumn: is_in_beam_plan_dim
+
+		annotation SummarizationSetBy = Automatic
+
 	partition gld_machine_dim = m
 		mode: import
 		source =
@@ -20,3 +47,4 @@ table gld_machine_dim
 	annotation PBI_NavigationStepName = Navigation
 
 	annotation PBI_ResultType = Table
+

@@ -20,3 +20,4 @@ ref table gld_machine_status_daily_fact
 ref table gld_production_daily_fact
 
 ref cultureInfo en-US
+
