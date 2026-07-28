@@ -43,7 +43,7 @@ models:
 
   - name: slv_start_beam
     columns:
-      - name: date
+      - name: beam_start_date
         tests:
           - not_null
       - name: machine
@@ -52,6 +52,8 @@ models:
       - name: lot
         tests:
           - not_null
-      - name: beam_start_date
+      - name: source_updated_at
         tests:
           - not_null
+      - name: total_yarn
+      - name: length_m
