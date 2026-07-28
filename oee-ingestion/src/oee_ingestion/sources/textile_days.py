@@ -52,6 +52,19 @@ def normalize_textile_merge_keys(
     )
 
 
+def filter_current_sheet_month_rows(
+    df: pd.DataFrame,
+    sheet_year: int,
+    sheet_month: int,
+) -> pd.DataFrame:
+    """Keep only records that belong to the sheet's current month."""
+    month_mask = (
+        (df["prod_date"].dt.year == sheet_year)
+        & (df["prod_date"].dt.month == sheet_month)
+    )
+    return df.loc[month_mask].reset_index(drop=True)
+
+
 def filter_valid_textile_machine_rows(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -161,6 +174,11 @@ def extract_lot_table(
     )
 
     df_lot = normalize_textile_merge_keys(df_lot)
+    df_lot = filter_current_sheet_month_rows(
+        df=df_lot,
+        sheet_year=sheet_year,
+        sheet_month=sheet_month,
+    )
 
     if df_lot.empty:
         logging.warning(
@@ -326,6 +344,11 @@ def extract_production_table(
     )
 
     df_prod = normalize_textile_merge_keys(df_prod)
+    df_prod = filter_current_sheet_month_rows(
+        df=df_prod,
+        sheet_year=sheet_year,
+        sheet_month=sheet_month,
+    )
 
     if df_prod.empty:
         logging.warning(
