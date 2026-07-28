@@ -7,10 +7,14 @@ data/*.xlsx
 # Log file
 logs/
 *.log
+*.pyc
+__pycache__/
 *.egg-info/
 .env
 
 # Generated database, Power BI data, and local state
+oee.db
+db/
 db/oee.db
 data/exports/
 **/.pbi/
