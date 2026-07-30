@@ -1,0 +1,46 @@
+mailbox: production@pnschun.com
+output_root: ../data/raw
+
+rules:
+  weaving:
+    enabled: true
+    sender: Nhi.Vo/Weaving
+    subject: WS-2 Weaving Daily Report
+    output_folder: ""
+
+    attachments:
+      - dataset_name: textile_days
+        save_mode: replace_latest
+        include:
+          - SẢN LƯỢNG DỆT
+        exclude:
+          - Consumable
+        extensions:
+          - .xlsx
+          - .xls
+          - .xlsm
+
+      - dataset_name: start_beam
+        save_mode: dated_archive
+        include:
+          - 호기별 상하대 일정
+        exclude:
+          - Consumable
+        extensions:
+          - .xlsx
+          - .xls
+          - .xlsm
+
+  dyeing:
+    enabled: false
+    sender: Benh.Vo/Dyeing
+    subject: WS-3 Dyeing & Tenter Daily Report
+    output_folder: ""
+
+    attachments:
+      - include: []
+        exclude: []
+        extensions:
+          - .xlsx
+          - .xls
+          - .xlsm
