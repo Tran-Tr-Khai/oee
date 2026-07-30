@@ -1,3 +1,6 @@
+from datetime import date
+from pathlib import Path
+
 import duckdb
 
 from oee_ingestion.config import (
@@ -8,6 +11,13 @@ from oee_ingestion.config import (
     PipelineConfig,
     get_mssql_config,
 )
+from oee_ingestion.pipeline import (
+    get_latest_incremental_value,
+    run_dataframe_pipeline,
+    run_ingest_files,
+    run_ingest_pipeline,
+    table_exists,
+)
 from oee_ingestion.sources.beam import (
     extract_complete_beam,
     extract_start_beam,
@@ -16,13 +26,7 @@ from oee_ingestion.sources.mssql import (
     read_machine_status,
 )
 from oee_ingestion.sources.textile_days import (
-    extract_textile_days
-)
-from oee_ingestion.pipeline import (
-    get_latest_incremental_value,
-    run_dataframe_pipeline,
-    run_ingest_pipeline,
-    table_exists,
+    extract_textile_days,
 )
 
 
@@ -60,6 +64,53 @@ MACHINE_STATUS_PIPELINE = PipelineConfig(
     incremental_type=IncrementalType.BIGINT,
     sort_columns=("id",),
 )
+
+START_BEAM_CONFIG = next(
+    config
+    for config in EXCEL_PIPELINES
+    if config.table_name == "raw_start_beam"
+)
+
+
+def find_start_beam_snapshot(
+    snapshot_date: date,
+    data_dir: Path = DATA_DIR,
+) -> Path:
+    expected_stem = f"{snapshot_date}_start_beam"
+    matches = sorted(
+        path
+        for path in data_dir.glob(f"{expected_stem}.*")
+        if path.is_file()
+        and not path.name.startswith("~$")
+        and path.suffix.casefold() in {".xlsx", ".xls"}
+    )
+
+    if not matches:
+        raise FileNotFoundError(
+            f"Snapshot not found: {expected_stem}.xlsx"
+        )
+    if len(matches) > 1:
+        raise ValueError(
+            f"More than one start-beam snapshot found for {snapshot_date}: "
+            + ", ".join(str(path) for path in matches)
+        )
+    return matches[0]
+
+
+def ingest_start_beam_snapshot(
+    snapshot_path: Path,
+    db_path: Path = DUCKDB_PATH,
+) -> None:
+    if not snapshot_path.is_file():
+        raise FileNotFoundError(f"Snapshot not found: {snapshot_path}")
+
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    with duckdb.connect(str(db_path)) as conn:
+        run_ingest_files(
+            conn=conn,
+            excel_files=[snapshot_path],
+            config=START_BEAM_CONFIG,
+        )
 
 
 def main() -> None:

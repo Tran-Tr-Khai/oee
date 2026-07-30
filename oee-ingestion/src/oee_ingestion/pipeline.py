@@ -395,24 +395,39 @@ def run_ingest_pipeline(
     data_dir: Path,
     config: PipelineConfig,
 ) -> None:
-    if config.extractor_func is None:
-        raise ValueError(
-            f"Missing extractor_func for Excel pipeline: {config.table_name}"
-        )
-
     excel_files = sorted(
         [
             path
             for path in [
-                *data_dir.rglob(f"{config.file_pattern}.xlsx"),
-                *data_dir.rglob(f"{config.file_pattern}.xls"),
+                *data_dir.glob(f"{config.file_pattern}.xlsx"),
+                *data_dir.glob(f"{config.file_pattern}.xls"),
             ]
-            if not path.name.startswith("~$")
+            if path.is_file() and not path.name.startswith("~$")
         ],
         key=lambda path: str(path).lower(),
     )
     if not excel_files:
         logging.warning("No files found for pattern: %s", config.file_pattern)
+        return
+
+    run_ingest_files(
+        conn=conn,
+        excel_files=excel_files,
+        config=config,
+    )
+
+
+def run_ingest_files(
+    conn: duckdb.DuckDBPyConnection,
+    excel_files: list[Path],
+    config: PipelineConfig,
+) -> None:
+    if config.extractor_func is None:
+        raise ValueError(
+            f"Missing extractor_func for Excel pipeline: {config.table_name}"
+        )
+    if not excel_files:
+        logging.warning("No source files given for %s", config.table_name)
         return
 
     frames: list[pd.DataFrame] = []

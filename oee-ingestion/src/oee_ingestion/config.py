@@ -43,7 +43,7 @@ class MssqlConfig:
 
 ROOT_DIR = Path(__file__).resolve().parents[3]
 
-DATA_DIR = ROOT_DIR / "data"
+DATA_DIR = ROOT_DIR / "data" / "raw"
 DB_DIR = ROOT_DIR / "db"
 LOG_DIR = ROOT_DIR / "logs"
 

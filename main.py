@@ -1,12 +1,8 @@
 from pathlib import Path
-import sys
+import runpy
 
-PACKAGE_SRC = Path(__file__).resolve().parent / "oee-ingestion" / "src"
-if str(PACKAGE_SRC) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_SRC))
-
-from oee_ingestion.main import main
+INGESTION_MAIN = Path(__file__).resolve().parent / "oee-ingestion" / "ingest.py"
 
 
 if __name__ == "__main__":
-    main()
+    runpy.run_path(str(INGESTION_MAIN), run_name="__main__")
