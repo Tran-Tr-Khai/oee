@@ -3,6 +3,6 @@ oee_processing:
   outputs:
     dev:
       type: duckdb
-      path: "../db/oee.db"
+      path: "{{ env_var('OEE_DUCKDB_PATH', '../db/oee.db') }}"
       schema: main
       threads: 4

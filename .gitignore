@@ -11,6 +11,8 @@ logs/
 __pycache__/
 *.egg-info/
 .env
+.airflow/
+oee-orchestration/.env
 
 # Generated database, Power BI data, and local state
 oee.db

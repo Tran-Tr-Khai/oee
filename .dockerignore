@@ -1,0 +1,14 @@
+.git
+.venv
+.uv-cache
+.airflow
+**/__pycache__
+**/*.pyc
+**/*.egg-info
+data
+db
+logs
+oee-dashboard
+oee-mail-downloader
+oee-processing/logs
+oee-processing/target
