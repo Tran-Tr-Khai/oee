@@ -1,15 +1,32 @@
 # OEE orchestration
 
-Airflow coordinates the OEE layers. The DAG file is:
+Airflow coordinates the OEE layers. The DAG files are:
 
 ```text
+oee-orchestration/dags/oee_daily_pipeline.py
 oee-orchestration/dags/oee_start_beam.py
 ```
+
+`oee_daily_pipeline` handles normal daily sources:
+
+```text
+check_raw_inputs
+  -> ingest_raw
+  -> build_silver
+  -> test_silver
+  -> build_gold
+  -> cleanup_raw_files
+```
+
+It processes `textile_days`, `complete_beam`, `machine_status`, and exactly one
+`start_beam` snapshot for the DAG run date.
+
+`oee_start_beam` handles start-beam replay and backfill.
 
 It uses Apache Airflow 3.3 partitioned backfills. One partition is one
 `data/raw/YYYY-MM-DD_start_beam.xlsx` file.
 
-## Task order
+## Start-Beam Task Order
 
 ```text
 locate_snapshot

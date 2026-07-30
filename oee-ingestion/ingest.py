@@ -57,6 +57,12 @@ EXCEL_PIPELINES = [
     ),
 ]
 
+NORMAL_EXCEL_PIPELINES = [
+    config
+    for config in EXCEL_PIPELINES
+    if config.table_name != "raw_start_beam"
+]
+
 MACHINE_STATUS_PIPELINE = PipelineConfig(
     table_name="raw_machine_status",
     load_strategy=LoadStrategy.APPEND,
@@ -114,11 +120,15 @@ def ingest_start_beam_snapshot(
 
 
 def main() -> None:
+    ingest_normal_sources()
+
+
+def ingest_normal_sources() -> None:
     DUCKDB_PATH.parent.mkdir(parents=True, exist_ok=True)
     mssql_config = get_mssql_config()
 
     with duckdb.connect(str(DUCKDB_PATH)) as conn:
-        for config in EXCEL_PIPELINES:
+        for config in NORMAL_EXCEL_PIPELINES:
             run_ingest_pipeline(
                 conn=conn,
                 data_dir=DATA_DIR,

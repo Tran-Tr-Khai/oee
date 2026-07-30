@@ -1,15 +1,12 @@
 from datetime import date
 import logging
 from pathlib import Path
-import subprocess
 
 import duckdb
 
 from oee_ingestion.config import DUCKDB_PATH, ROOT_DIR
 from oee_ingestion.pipeline import table_exists
-
-
-PROCESSING_DIR = ROOT_DIR / "oee-processing"
+from oee_orchestration.pipeline import run_dbt
 
 
 def get_partition_date(dag_run) -> date:
@@ -74,22 +71,6 @@ def prepare_silver(
             snapshot_date,
         )
         return "incremental"
-
-
-def run_dbt(*args: str) -> None:
-    subprocess.run(
-        [
-            "dbt",
-            *args,
-            "--no-partial-parse",
-            "--project-dir",
-            str(PROCESSING_DIR),
-            "--profiles-dir",
-            str(PROCESSING_DIR),
-        ],
-        cwd=ROOT_DIR,
-        check=True,
-    )
 
 
 def build_silver() -> None:

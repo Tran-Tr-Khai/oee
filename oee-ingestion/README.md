@@ -23,6 +23,9 @@ uv run python oee-ingestion/ingest.py
 ```
 
 The root `main.py` is only a compatibility wrapper that runs this file.
+Normal ingestion loads `textile_days`, `complete_beam`, and `machine_status`.
+Start-beam snapshots are ingested one file at a time by Airflow because they
+must replay in date order.
 
 Start-beam snapshot helpers live in `oee-ingestion/ingest.py` because they are
 job-level entry points, not generic ingestion engine code. The Airflow DAG calls

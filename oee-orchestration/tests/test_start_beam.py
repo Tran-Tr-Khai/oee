@@ -6,6 +6,7 @@ import unittest
 
 import duckdb
 
+from oee_orchestration.pipeline import get_dag_run_date, remove_file_if_exists
 from oee_orchestration.start_beam import (
     get_partition_date,
     prepare_silver,
@@ -26,8 +27,13 @@ find_start_beam_snapshot = ingestion_main.find_start_beam_snapshot
 
 
 class FakeDagRun:
-    def __init__(self, partition_key: str | None) -> None:
+    def __init__(
+        self,
+        partition_key: str | None,
+        logical_date=None,
+    ) -> None:
         self.partition_key = partition_key
+        self.logical_date = logical_date
 
 
 class PartitionDateTests(unittest.TestCase):
@@ -39,6 +45,18 @@ class PartitionDateTests(unittest.TestCase):
     def test_rejects_non_partitioned_manual_run(self) -> None:
         with self.assertRaisesRegex(ValueError, "Use Backfill"):
             get_partition_date(FakeDagRun(None))
+
+    def test_gets_daily_date_from_logical_date(self) -> None:
+        import pendulum
+
+        result = get_dag_run_date(
+            FakeDagRun(
+                None,
+                pendulum.datetime(2026, 7, 29, 12, 30, tz="UTC"),
+            )
+        )
+
+        self.assertEqual(result, date(2026, 7, 29))
 
 
 class FindSnapshotTests(unittest.TestCase):
@@ -129,6 +147,22 @@ class PrepareSilverTests(unittest.TestCase):
 
             self.assertEqual(mode, "incremental")
             self.assertEqual(dates, [(date(2026, 7, 9),)])
+
+
+class CleanupTests(unittest.TestCase):
+    def test_remove_file_if_exists_returns_false_for_missing_file(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            missing_path = Path(temp_dir) / "missing.xlsx"
+
+            self.assertFalse(remove_file_if_exists(missing_path))
+
+    def test_remove_file_if_exists_removes_existing_file(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            existing_path = Path(temp_dir) / "textile_days.xlsx"
+            existing_path.touch()
+
+            self.assertTrue(remove_file_if_exists(existing_path))
+            self.assertFalse(existing_path.exists())
 
 
 if __name__ == "__main__":
