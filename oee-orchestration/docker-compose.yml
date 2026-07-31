@@ -5,6 +5,8 @@ x-airflow-common: &airflow-common
     context: ..
     dockerfile: oee-orchestration/Dockerfile
   image: oee-airflow:3.3.0
+  env_file:
+    - ../.env
   environment: &airflow-common-env
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     AIRFLOW__CORE__DAGS_FOLDER: /opt/oee/oee-orchestration/dags

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pendulum
 from airflow.sdk import CronPartitionTimetable, DAG, task
+from airflow.sdk.exceptions import AirflowSkipException
 from oee_orchestration.start_beam import get_partition_date
 
 
@@ -13,7 +14,7 @@ with DAG(
     dag_id="oee_start_beam",
     description="Load one start-beam snapshot from Raw to Gold.",
     schedule=CronPartitionTimetable(
-        "0 19 * * 1-6",
+        "0 0 * * 1-6",
         timezone="Asia/Bangkok",
         key_format="%Y-%m-%d",
     ),
@@ -34,6 +35,12 @@ with DAG(
         depends_on_past=True,
     )
     def locate_snapshot(dag_run=None) -> dict[str, str]:
+        run_type = str(getattr(dag_run, "run_type", "")).lower()
+        if "scheduled" in run_type:
+            raise AirflowSkipException(
+                "oee_start_beam is backfill-only; scheduled runs are skipped."
+            )
+
         snapshot_date = get_partition_date(dag_run)
 
         from ingest import find_start_beam_snapshot

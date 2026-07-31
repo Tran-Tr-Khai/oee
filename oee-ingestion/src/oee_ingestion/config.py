@@ -77,7 +77,7 @@ def get_mssql_config() -> MssqlConfig:
         password=require("MSSQL_PASSWORD"),
         driver=os.getenv(
             "MSSQL_DRIVER",
-            "ODBC Driver 17 for SQL Server",
+            "ODBC Driver 18 for SQL Server",
         ),
         trust_server_certificate=os.getenv(
             "MSSQL_TRUST_SERVER_CERTIFICATE",

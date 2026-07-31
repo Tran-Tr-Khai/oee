@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 import importlib.util
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -57,6 +57,16 @@ class PartitionDateTests(unittest.TestCase):
         )
 
         self.assertEqual(result, date(2026, 7, 29))
+
+    def test_gets_daily_date_from_standard_datetime(self) -> None:
+        result = get_dag_run_date(
+            FakeDagRun(
+                None,
+                datetime(2026, 7, 31, 0, 45, tzinfo=timezone.utc),
+            )
+        )
+
+        self.assertEqual(result, date(2026, 7, 31))
 
 
 class FindSnapshotTests(unittest.TestCase):

@@ -61,10 +61,15 @@ Docker Compose uses:
 Start Docker Desktop first. From the workspace root, copy the local settings:
 
 ```powershell
+Copy-Item .env.example .env
+
 Copy-Item `
   oee-orchestration/.env.example `
   oee-orchestration/.env
 ```
+
+Set the SQL Server connection values in the root `.env` before starting
+Airflow. Docker Compose injects those values into the Airflow services.
 
 Build the image from the shared `pyproject.toml` and `uv.lock`:
 

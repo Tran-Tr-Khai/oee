@@ -1,6 +1,7 @@
 from pathlib import Path
 import subprocess
-from datetime import date
+from datetime import date, timezone
+from zoneinfo import ZoneInfo
 
 from oee_ingestion.config import ROOT_DIR
 
@@ -43,4 +44,7 @@ def get_dag_run_date(dag_run) -> date:
     if logical_date is None:
         raise ValueError("This DAG run has no logical date.")
 
-    return logical_date.in_timezone("Asia/Bangkok").date()
+    if logical_date.tzinfo is None:
+        logical_date = logical_date.replace(tzinfo=timezone.utc)
+
+    return logical_date.astimezone(ZoneInfo("Asia/Bangkok")).date()
